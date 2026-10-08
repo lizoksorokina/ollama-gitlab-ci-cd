@@ -1,0 +1,26 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_IMAGE_TAG: $DOCKER_REGISTRY/$DOCKER_REPOSITORY:ollama-$CI_COMMIT_SHORT_SHA
+
+build:
+  stage: build
+  image: docker:28
+  services:
+    - name: docker:28-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo $DOCKER_REGISTRY_PASSWORD | docker login -u $DOCKER_REGISTRY_USER --password-stdin $DOCKER_REGISTRY
+  script:
+    # - docker build -t $DOCKER_IMAGE_TAG .
+    - docker pull ollama/ollama:0.12.8
+    - docker tag ollama/ollama:0.12.8 $DOCKER_IMAGE_TAG
+    - docker push $DOCKER_IMAGE_TAG
+
+
