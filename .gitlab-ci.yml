@@ -24,3 +24,13 @@ build:
     - docker push $DOCKER_IMAGE_TAG
 
 
+tests:
+  stage: test
+  image: golang:1.24
+  coverage: '/^total:\s+\(statements\)\s+(\d+\.\d+)%$/'
+  before_script:
+    - go mod download
+  script:
+    - go test -coverprofile=coverage.out ./...
+    - go tool cover -func=coverage.out
+
