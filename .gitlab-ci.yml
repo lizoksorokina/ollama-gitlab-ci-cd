@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - deploy
+  - lint
 
 variables:
   DOCKER_IMAGE_TAG: $DOCKER_REGISTRY/$DOCKER_REPOSITORY:ollama-$CI_COMMIT_SHORT_SHA
@@ -34,3 +35,12 @@ tests:
     - go test -coverprofile=coverage.out ./...
     - go tool cover -func=coverage.out
 
+lint:
+  stage: test
+  image: golang:1.24
+  before_script:
+    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.2.2
+    - golangci-lint --versio
+  script:
+    - golangci-lint migrate || true
+    - golangci-lint run ./...
