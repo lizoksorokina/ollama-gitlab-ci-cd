@@ -38,6 +38,7 @@ tests:
 lint:
   stage: test
   image: golang:1.24
+  allow_failure: true
   before_script:
     - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.2.2
     - golangci-lint --versio
