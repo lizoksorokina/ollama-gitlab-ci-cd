@@ -1,8 +1,15 @@
+.rules:
+  main:
+    - if: $CI_COMMIT_BRANCH == "main"
+
 stages:
   - build
   - test
   - deploy
-  - lint
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
 
 variables:
   DOCKER_IMAGE_TAG: $DOCKER_REGISTRY/$DOCKER_REPOSITORY:ollama-$CI_COMMIT_SHORT_SHA
@@ -10,6 +17,7 @@ variables:
 build:
   stage: build
   image: docker:28
+  interruptible: true
   services:
     - name: docker:28-dind
       alias: docker
@@ -24,24 +32,43 @@ build:
     - docker tag ollama/ollama:0.12.8 $DOCKER_IMAGE_TAG
     - docker push $DOCKER_IMAGE_TAG
 
-
 tests:
   stage: test
   image: golang:1.24
+  interruptible: true
   coverage: '/^total:\s+\(statements\)\s+(\d+\.\d+)%$/'
+  variables:
+    GOMODCACHE: $CI_PROJECT_DIR/.cache/go-mod
   before_script:
     - go mod download
   script:
     - go test -coverprofile=coverage.out ./...
     - go tool cover -func=coverage.out
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-tests
+    paths:
+      - $CI_PROJECT_DIR/.cache/go-mod
 
 lint:
   stage: test
   image: golang:1.24
+  interruptible: true
   allow_failure: true
   before_script:
     - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.2.2
-    - golangci-lint --versio
+    - golangci-lint --version
   script:
     - golangci-lint migrate || true
     - golangci-lint run ./...
+
+deploy:
+  stage: deploy
+  image: docker:28
+  rules: !reference [.rules, main]
+  variables:
+    STACKS_DIRECTORY: ./docker-swarm/stacks
+    MODEL: deepseek-r1:14b
+  before_script:
+    - echo $DOCKER_REGISTRY_PASSWORD | docker login -u $DOCKER_REGISTRY_USER --password-stdin $DOCKER_REGISTRY
+  script:
+    - docker -H $DEPLOY_SERVER_ADDR stack deploy --with-registry-auth -c $STACKS_DIRECTORY/ollama-deepseek.yaml ollama-deepseek
