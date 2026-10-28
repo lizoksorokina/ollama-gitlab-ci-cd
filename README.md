@@ -3,8 +3,6 @@
 Пет-проект, в котором вокруг [Ollama](https://github.com/ollama/ollama) собран полный CI/CD-пайплайн:
 сборка Docker-образа, тесты, линт, публикация в **Docker Hub** и деплой в **Docker Swarm**.
 
-Код самого Ollama — форк upstream (Go + C++/CMake), моя часть — вся обвязка: `.gitlab-ci.yml`,
-`Dockerfile`, конфиг линтера и настройки пайплайна.
 
 ## Что есть в проекте
 
@@ -65,8 +63,8 @@ flowchart LR
 
 ## Переменные
 
-Все значения задаются **в настройках проекта GitLab**: `Settings → CI/CD → Variables`.
-В репозиторий они не попадают.
+Все значения задаются **в настройках проекта GitLab**
+
 
 | Переменная | Пример | Зачем | Настройки |
 | --- | --- | --- | --- |
@@ -74,12 +72,7 @@ flowchart LR
 | `DOCKER_REGISTRY_USER` | `lizoksorokina` | Логин в Docker Hub | — |
 | `DOCKER_REGISTRY_PASSWORD` | `dckr_pat_***` | Access token Docker Hub | **Masked**, Protected |
 | `DOCKER_REPOSITORY` | `lizoksorokina/ollama` | Репозиторий, куда пушится образ | — |
-| `DEPLOY_SERVER_ADDR` | `tcp://10.0.0.10:2375` | Адрес Docker Swarm manager | **Masked**, Protected |
 
-`DOCKER_IMAGE_TAG` руками не задаётся — собирается из `DOCKER_REGISTRY`, `DOCKER_REPOSITORY` и SHA коммита.
-
-Пароль — именно **access token** (Docker Hub → Account settings → Security → New access token,
-права Read & Write), а не пароль от аккаунта: токен можно отозвать, и он не всплывёт в логах.
 
 ## Что нужно, чтобы пайплайн заработал
 
@@ -91,8 +84,7 @@ flowchart LR
 5. **Переменные** из таблицы выше, добавленные в проект.
 6. **GPU на нодах swarm** (NVIDIA driver + nvidia-container-toolkit), если модель запускается на GPU.
 
-Порт Docker API (`2375`) лучше не открывать в интернет: правильнее поднять TLS (`2376`) или
-пробросить доступ через VPN/SSH-туннель.
+
 
 ## Локальная проверка
 
@@ -124,7 +116,4 @@ docker pull docker.io/<user>/<repo>:ollama-<short-sha>
 - Вынести общие куски пайплайна в `.gitlab/ci/*.yml` и переиспользовать через `include`.
 - Развести окружения: staging на каждой ветке, production — только по тегу.
 
-## Лицензия
 
-Проект основан на [ollama/ollama](https://github.com/ollama/ollama) и распространяется под
-Apache License 2.0 — см. [LICENSE](LICENSE).
